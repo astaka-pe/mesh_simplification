@@ -21,9 +21,9 @@ python simplification.py
     <td width="30%">Simplified(60%)</td>
   </tr>
   <tr>
-    <td width="30%"><img src="data/original.png" width="100%"/></td>
-    <td width="30%"><img src="data/simp_v1.png" width="100%"/></td>
-    <td width="30%"><img src="data/simp_v2.png" width="100%"/></td>
+    <td width="30%"><img src="docs/original.png" width="100%"/></td>
+    <td width="30%"><img src="docs/simp_v1.png" width="100%"/></td>
+    <td width="30%"><img src="docs/simp_v2.png" width="100%"/></td>
   </tr>
 </table>
 
