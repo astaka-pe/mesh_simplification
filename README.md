@@ -1,6 +1,7 @@
 # Mesh Simplification
 Implemented "Surface Simplification Using Quadric Error Metrics"
-[Paper](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
+
+[[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
 
 ## Environments
 ```
