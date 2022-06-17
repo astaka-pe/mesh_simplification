@@ -14,13 +14,17 @@ torch
 python simplification.py
 ```
 
-- Original
-<img src="docs/original.png" width=300>
-
-- Simplified (80%)
-<img src="docs/simp_v1.png" width=300>
-
-- Simplified (60%)
-<img src="docs/simp_v2.png" width=300>
+<table>
+  <tr>
+    <td width="30%">Original</td>
+    <td width="30%">Simplified(80%)</td>
+    <td width="30%">Simplified(60%)</td>
+  </tr>
+  <tr>
+    <td width="30%"><img src="data/original.png" width="100%"/></td>
+    <td width="30%"><img src="data/simp_v1.png" width="100%"/></td>
+    <td width="30%"><img src="data/simp_v2.png" width="100%"/></td>
+  </tr>
+</table>
 
 Scripts are not completed yet.
