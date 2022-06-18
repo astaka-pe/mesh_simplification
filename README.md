@@ -26,6 +26,7 @@ python simplification.py
     <td width="24%"><img src="docs/simp_v2.png" width="100%"/></td>
     <td width="24%"><img src="docs/simp_v4.png" width="100%"/></td>
   </tr>
+  
   <tr>
     <td width="24%">14762 vertices</td>
     <td width="24%">7381 vertices</td>
