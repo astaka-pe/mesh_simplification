@@ -1,5 +1,5 @@
 # メッシュ簡略化
-"Surface Simplification Using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
+"Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
 
 ## アルゴリズム
 
@@ -21,8 +21,7 @@
 
 頂点周りの平面（三角形）を表す方程式を、$ax+by+cz+d=0$ とする。ただし、$a^2+b^2+c^2=1$ である。
 すなわち、$(a, b, c)^T$ は三角形の法線ベクトルを意味し、三角形の重心座標を $(c_x, c_y, c_z)^T$ とすると、
-```math
-d = -1 \times
+$$ d = -1 \times
 \left[ 
 \begin{matrix}
 a\\
@@ -38,24 +37,23 @@ c_y\\
 c_z\\
 \end{matrix}
 \right]
-```
+$$
 と表せる。
 $\bm{p}=(a,b,c,d)^T$ として、
 頂点 $\bm{v}$ から周囲の平面（三角形）$\bm{p}$ までの距離は
-```math
+$$
 \bm{p}^T \bm{v} = a v_x+ b v_y + c v_z + d
-```
+$$
 と表現でき、これらの二乗誤差の総和は、
-```math
+$$
 \begin{align}
 \Delta(\bm{v}) =& \sum_{\bm{p} \in N(\bm{v})}(\bm{p}^T \bm{v})^2 \\
 =& \sum_{\bm{p} \in N(\bm{v})}(\bm{v}^T \bm{p})(\bm{p}^T \bm{v}) \\
 =& \bm{v}^T \left(\sum_{\bm{p} \in N(\bm{v})}\bm{p}\bm{p}^T \right) \bm{v} \\
 \end{align}
-```
+$$
 となる。ここで、
-```math
-K_p = \bm{p}\bm{p}^T =
+$$ K_p = \bm{p}\bm{p}^T =
 \left[
 \begin{matrix} 
 a^2 & ab & ac & ad \\ 
@@ -64,14 +62,12 @@ ac & bc & c^2 & cd \\
 ad & bd & cd & d^2  
 \end{matrix} 
 \right]
-```
-```math
+$$
+$$
 Q = \sum_{\bm{p} \in N(\bm{v})} K_p
-```
+$$
 と定義することで、頂点のコストを二次形式
-```math
-\Delta(\bm{v})=\bm{v}^T Q \bm{v}
-```
+$$\Delta(\bm{v})=\bm{v}^T Q \bm{v}$$
 で表せる。
 
 ## ライブラリ
