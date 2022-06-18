@@ -26,7 +26,7 @@ python simplification.py
     <td width="24%"><img src="docs/simp_v2.png" width="100%"/></td>
     <td width="24%"><img src="docs/simp_v4.png" width="100%"/></td>
   </tr>
-  
+
   <tr>
     <td width="24%">14762 vertices</td>
     <td width="24%">7381 vertices</td>
@@ -44,3 +44,9 @@ python simplification.py
 本スクリプトは改良途中。
 非多様体を生じるエッジ縮約や、境界エッジの縮約は行わない。
 エッジ角度を考慮していないため、自己交差や面のフリップが生じうる。
+
+## TODO
+
+- （縮約すると多様体を生じる）valance=3の頂点の削除
+- エッジ角度を考慮した縮約
+- 更新後頂点位置の最適化（現在は中点）
