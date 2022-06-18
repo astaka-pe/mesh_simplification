@@ -214,6 +214,9 @@ class Mesh:
         vert_map = [set() for i in range(len(simp_mesh.vs))]
 
         while np.sum(vi_mask) > target_v:
+            if len(E_heap) == 0:
+                print("edge cannot be collapsed anymore!")
+                break
             E_0, (vi_0, vi_1) = heapq.heappop(E_heap)
             Q_0 = Q_s[vi_0]
             #if (min(vi_0, vi_1), max(vi_0, vi_1)) not in edge_key:    # already corrupsed
@@ -233,14 +236,14 @@ class Mesh:
                 continue
 
             merged_faces = simp_mesh.vf[vi_0].intersection(simp_mesh.vf[vi_1])
-            simp_mesh.vf[vi_0] = simp_mesh.vf[vi_0].difference(simp_mesh.vf[vi_1])
+            if len(merged_faces) != 2:
+                """ boundary """
+                import pdb;pdb.set_trace()
+                print("boundary edge cannot be collapsed!")
+                continue
+            simp_mesh.vf[vi_0] = simp_mesh.vf[vi_0].union(simp_mesh.vf[vi_1]).difference(merged_faces)
             simp_mesh.vf[vi_1] = set()
 
-            if len(merged_faces) != 2:
-                """ boarder """
-                print("boarder edge cannot be collapsed!")
-                continue
-            
             # for v in simp_mesh.v2v[vi_1]:
             #     try:
             #         edge_key.pop((min(vi_1, v), max(vi_1, v)))
@@ -287,7 +290,144 @@ class Mesh:
                 simp_mesh.faces[i][j] = face_map[f[j]]
 
         return simp_mesh
+    
+    def pool_main(self, target_v):
+        vs, vf, fn, fc, edges = self.vs, self.vf, self.fn, self.fc, self.edges
 
+        """ 1. compute Q for each vertex """
+        Q_s = [[] for _ in range(len(vs))]
+        E_s = [[] for _ in range(len(vs))]
+        for i, v in enumerate(vs):
+            f_s = np.array(list(vf[i]))
+            fc_s = fc[f_s]
+            fn_s = fn[f_s]
+            d_s = - 1.0 * np.sum(fn_s * fc_s, axis=1, keepdims=True)
+            abcd_s = np.concatenate([fn_s, d_s], axis=1)
+            Q_s[i] = np.matmul(abcd_s.T, abcd_s)
+
+            v4 = np.concatenate([v, np.array([1])])
+            E_s[i] = np.matmul(v4, np.matmul(Q_s[i], v4.T))
+
+        """ 2. compute E for every possible pairs and create heapq """
+        E_heap = []
+        for i, e in enumerate(edges):
+            v_0, v_1 = vs[e[0]], vs[e[1]]
+            v_new = 0.5 * (v_0 + v_1)
+            v4_new = np.concatenate([v_new, np.array([1])])
+            
+            Q_0, Q_1 = Q_s[e[0]], Q_s[e[1]]
+            Q_new = Q_0 + Q_1
+            E_new = np.matmul(v4_new, np.matmul(Q_new, v4_new.T))
+            heapq.heappush(E_heap, (E_new, i))
+        
+        """ 3. collapse minimum-error vertex """
+
+        mask = np.ones(self.edges_count, dtype=np.bool)
+        self.v_mask = np.ones(len(self.vs), dtype=np.bool)
+        while np.sum(self.v_mask) > target_v:
+            E_0, edge_id = heapq.heappop(E_heap)
+            edge = self.edges[edge_id]
+            v_a = self.vs[edge[0]]
+            v_b = self.vs[edge[1]]
+
+            if mask[edge_id]:
+                pool = self.pool_edge(edge_id, mask)
+                if pool:
+                    Q_0 = Q_s[edge[0]]
+                    print(np.sum(self.v_mask), np.sum(mask))
+
+                    """ recompute E """
+                    for vv_i in self.v2v[edge[0]]:
+                        Q_1 = Q_s[vv_i]
+                        Q_new = Q_0 + Q_1
+                        v4_mid = np.concatenate([self.vs[edge[0]], np.array([1])])
+                        E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T))
+                        heapq.heappush(E_heap, (E_new, edge_id))
+        self.clean(mask)
+    
+    def pool_edge(self, edge_id, mask):
+        if self.has_boundaries(edge_id):
+            return False
+        elif self.is_one_ring_valid(edge_id):
+            self.merge_vertices(edge_id)
+            mask[edge_id] = False
+            self.edges_count -= 1
+            return True
+        else:
+            return False
+
+    def merge_vertices(self, edge_id):
+        self.remove_edge(edge_id)
+        edge = self.edges[edge_id]
+        v_a = self.vs[edge[0]]
+        v_b = self.vs[edge[1]]
+        self.vs[edge[0]] = 0.5 * (v_a + v_b)
+        self.v_mask[edge[1]] = False
+        mask = self.edges == edge[1]
+        self.ve[edge[0]].extend(self.ve[edge[1]])
+        self.edges[mask] = edge[0]
+
+    def remove_edge(self, edge_id):
+        vs = self.edges[edge_id]
+        for v in vs:
+            self.ve[v].remove(edge_id)
+    
+    def clean(self, edges_mask):
+        self.gemm_edges = self.gemm_edges[edges_mask]
+        self.edges = self.edges[edges_mask]
+        self.sides = self.sides[edges_mask]
+        new_ve = []
+        edges_mask = np.concatenate([edges_mask, [False]])
+        new_indices = np.zeros(edges_mask.shape[0], dtype=np.int32)
+        new_indices[-1] = -1
+        new_indices[edges_mask] = np.arange(0, np.ma.where(edges_mask)[0].shape[0])
+        self.gemm_edges[:, :] = new_indices[self.gemm_edges[:, :]]
+        for v_index, ve in enumerate(self.ve):
+            update_ve = []
+            # if self.v_mask[v_index]:
+            for e in ve:
+                update_ve.append(new_indices[e])
+            new_ve.append(update_ve)
+        self.ve = new_ve
+
+    def has_boundaries(self, edge_id):
+        for edge in self.gemm_edges[edge_id]:
+            if edge == -1 or -1 in self.gemm_edges[edge]:
+                print(edge_id, "is boundary")
+                return True
+        return False
+
+    def is_one_ring_valid(self, edge_id):
+        v_a = set(self.edges[self.ve[self.edges[edge_id, 0]]].reshape(-1))
+        v_b = set(self.edges[self.ve[self.edges[edge_id, 1]]].reshape(-1))
+        shared = v_a.intersection(v_b).difference(set(self.edges[edge_id]))
+        return len(shared) == 2
+
+    def __get_cycle(self, gemm, edge_id):
+        cycles = []
+        for j in range(2):
+            next_side = start_point = j * 2
+            next_key = edge_id
+            if gemm[edge_id, start_point] == -1:
+                continue
+            cycles.append([])
+            for i in range(3):
+                tmp_next_key = gemm[next_key, next_side]
+                tmp_next_side = self.sides[next_key, next_side]
+                tmp_next_side = tmp_next_side + 1 - 2 * (tmp_next_side % 2)
+                gemm[next_key, next_side] = -1
+                gemm[next_key, next_side + 1 - 2 * (next_side % 2)] = -1
+                next_key = tmp_next_key
+                next_side = tmp_next_side
+                cycles[-1].append(next_key)
+        return cycles
+
+    def __cycle_to_face(self, cycle, v_indices):
+        face = []
+        for i in range(3):
+            v = list(set(self.edges[cycle[i]]) & set(self.edges[cycle[(i + 1) % 3]]))[0]
+            face.append(v_indices[v])
+        return face
         
     def save(self, filename):
         assert len(self.vs) > 0
@@ -308,6 +448,27 @@ class Mesh:
                 i1 = indices[i + 1] + 1
                 i2 = indices[i + 2] + 1
                 fp.write('f {0} {1} {2}\n'.format(i0, i1, i2))
+
+    def export(self, file, vcolor=None):
+        faces = []
+        vs = self.vs[self.v_mask]
+        gemm = np.array(self.gemm_edges)
+        import pdb;pdb.set_trace()
+        new_indices = np.zeros(self.v_mask.shape[0], dtype=np.int32)
+        new_indices[self.v_mask] = np.arange(0, np.ma.where(self.v_mask)[0].shape[0])
+        for edge_index in range(len(gemm)):
+            cycles = self.__get_cycle(gemm, edge_index)
+            for cycle in cycles:
+                faces.append(self.__cycle_to_face(cycle, new_indices))
+        with open(file, 'w+') as f:
+            for vi, v in enumerate(vs):
+                vcol = ' %f %f %f' % (vcolor[vi, 0], vcolor[vi, 1], vcolor[vi, 2]) if vcolor is not None else ''
+                f.write("v %f %f %f%s\n" % (v[0], v[1], v[2], vcol))
+            for face_id in range(len(faces) - 1):
+                f.write("f %d %d %d\n" % (faces[face_id][0] + 1, faces[face_id][1] + 1, faces[face_id][2] + 1))
+            f.write("f %d %d %d" % (faces[-1][0] + 1, faces[-1][1] + 1, faces[-1][2] + 1))
+            for edge in self.edges:
+                f.write("\ne %d %d" % (new_indices[edge[0]] + 1, new_indices[edge[1]] + 1))
     
     def save_as_ply(self, filename, fn):
         assert len(self.vs) > 0
