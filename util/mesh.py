@@ -193,9 +193,7 @@ class Mesh:
 
         """ 2. compute E for every possible pairs and create heapq """
         E_heap = []
-        edge_key = {}
         for i, e in enumerate(edges):
-            edge_key[(min(e[0], e[1]), max(e[0], e[1]))] = 1
             v_0, v_1 = vs[e[0]], vs[e[1]]
             v_new = 0.5 * (v_0 + v_1)
             v4_new = np.concatenate([v_new, np.array([1])])
@@ -217,60 +215,74 @@ class Mesh:
             if len(E_heap) == 0:
                 print("edge cannot be collapsed anymore!")
                 break
+
             E_0, (vi_0, vi_1) = heapq.heappop(E_heap)
-            Q_0 = Q_s[vi_0]
-            #if (min(vi_0, vi_1), max(vi_0, vi_1)) not in edge_key:    # already corrupsed
-            if vi_mask[vi_0] == False or vi_mask[vi_1] == False:
+
+            if (vi_mask[vi_0] == False) or (vi_mask[vi_1] == False):
                 continue
 
-            print(np.sum(vi_mask), np.sum(fi_mask))
-            v_new = 0.5 * (vs[vi_0] + vs[vi_1])
-
             """ edge collapse """
-            new_vi_0 = set(simp_mesh.v2v[vi_0]).union(set(simp_mesh.v2v[vi_1])).difference({vi_0, vi_1})
             shared_vv = list(set(simp_mesh.v2v[vi_0]).intersection(set(simp_mesh.v2v[vi_1])))
+            merged_faces = simp_mesh.vf[vi_0].intersection(simp_mesh.vf[vi_1])
 
             if len(shared_vv) != 2:
                 """ non-manifold! """
-                print("non-manifold can be occured!!")
+                print("non-manifold can be occured!!" , len(shared_vv))
+                self.remove_tri_valance(simp_mesh, vi_0, vi_1, shared_vv, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap)
                 continue
 
-            merged_faces = simp_mesh.vf[vi_0].intersection(simp_mesh.vf[vi_1])
-            if len(merged_faces) != 2:
+            elif len(merged_faces) != 2:
                 """ boundary """
-                import pdb;pdb.set_trace()
                 print("boundary edge cannot be collapsed!")
                 continue
-            simp_mesh.vf[vi_0] = simp_mesh.vf[vi_0].union(simp_mesh.vf[vi_1]).difference(merged_faces)
-            simp_mesh.vf[vi_1] = set()
 
-            # for v in simp_mesh.v2v[vi_1]:
-            #     try:
-            #         edge_key.pop((min(vi_1, v), max(vi_1, v)))
-            #     except:
-            #         import pdb;pdb.set_trace()
-            simp_mesh.v2v[vi_0] = list(new_vi_0)
-            simp_mesh.v2v[vi_1] = []
-            vi_mask[vi_1] = False
-
-            vert_map[vi_0] = vert_map[vi_0].union(vert_map[vi_1])
-            vert_map[vi_0] = vert_map[vi_0].union({vi_1})
-            vert_map[vi_1] = set()
-            
-            fi_mask[np.array(list(merged_faces)).astype(np.int)] = False
-
-            simp_mesh.vs[vi_0] = v_new
-
-            """ recompute E """
-            for vv_i in simp_mesh.v2v[vi_0]:
-                edge_key[(min(vi_0, vv_i), max(vi_0, vv_i))] = 1
-                v_mid = 0.5 * (v_new + simp_mesh.vs[vv_i])
-                Q_1 = Q_s[vv_i]
-                Q_new = Q_0 + Q_1
-                v4_mid = np.concatenate([v_mid, np.array([1])])
-                E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T))
-                heapq.heappush(E_heap, (E_new, (vi_0, vv_i)))
+            else:
+                self.edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap)
+                print(np.sum(vi_mask), np.sum(fi_mask))
         
+        self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
+
+        return simp_mesh
+    
+    @staticmethod
+    def remove_tri_valance(simp_mesh, vi_0, vi_1, shared_vv, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap):
+        #import pdb;pdb.set_trace()
+        pass
+        
+    
+    @staticmethod
+    def edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap):
+        new_vi_0 = set(simp_mesh.v2v[vi_0]).union(set(simp_mesh.v2v[vi_1])).difference({vi_0, vi_1})
+        simp_mesh.vf[vi_0] = simp_mesh.vf[vi_0].union(simp_mesh.vf[vi_1]).difference(merged_faces)
+        simp_mesh.vf[vi_1] = set()
+
+        simp_mesh.v2v[vi_0] = list(new_vi_0)
+        for v in simp_mesh.v2v[vi_1]:
+            if v != vi_0:
+                simp_mesh.v2v[v] = list(set(simp_mesh.v2v[v]).difference({vi_1}).union({vi_0}))
+        simp_mesh.v2v[vi_1] = []
+        vi_mask[vi_1] = False
+
+        vert_map[vi_0] = vert_map[vi_0].union(vert_map[vi_1])
+        vert_map[vi_0] = vert_map[vi_0].union({vi_1})
+        vert_map[vi_1] = set()
+        
+        fi_mask[np.array(list(merged_faces)).astype(np.int)] = False
+
+        simp_mesh.vs[vi_0] = 0.5 * (simp_mesh.vs[vi_0] + simp_mesh.vs[vi_1])
+
+        """ recompute E """
+        Q_0 = Q_s[vi_0]
+        for vv_i in simp_mesh.v2v[vi_0]:
+            v_mid = 0.5 * (simp_mesh.vs[vi_0] + simp_mesh.vs[vv_i])
+            Q_1 = Q_s[vv_i]
+            Q_new = Q_0 + Q_1
+            v4_mid = np.concatenate([v_mid, np.array([1])])
+            E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T))
+            heapq.heappush(E_heap, (E_new, (vi_0, vv_i)))
+    
+    @staticmethod
+    def rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map):
         face_map = dict(zip(np.arange(len(vi_mask)), np.cumsum(vi_mask)-1))
         simp_mesh.vs = simp_mesh.vs[vi_mask]
         
@@ -288,8 +300,61 @@ class Mesh:
         for i, f in enumerate(simp_mesh.faces):
             for j in range(3):
                 simp_mesh.faces[i][j] = face_map[f[j]]
+        
+    def save(self, filename):
+        assert len(self.vs) > 0
+        vertices = np.array(self.vs, dtype=np.float32).flatten()
+        indices = np.array(self.faces, dtype=np.uint32).flatten()
 
-        return simp_mesh
+        with open(filename, 'w') as fp:
+            # Write positions
+            for i in range(0, vertices.size, 3):
+                x = vertices[i + 0]
+                y = vertices[i + 1]
+                z = vertices[i + 2]
+                fp.write('v {0:.8f} {1:.8f} {2:.8f}\n'.format(x, y, z))
+
+            # Write indices
+            for i in range(0, len(indices), 3):
+                i0 = indices[i + 0] + 1
+                i1 = indices[i + 1] + 1
+                i2 = indices[i + 2] + 1
+                fp.write('f {0} {1} {2}\n'.format(i0, i1, i2))
+    
+    def save_as_ply(self, filename, fn):
+        assert len(self.vs) > 0
+        vertices = np.array(self.vs, dtype=np.float32).flatten()
+        indices = np.array(self.faces, dtype=np.uint32).flatten()
+        fnormals = np.array(fn, dtype=np.float32).flatten()
+
+        with open(filename, 'w') as fp:
+            # Write Header
+            fp.write("ply\nformat ascii 1.0\nelement vertex {}\n".format(len(self.vs)))
+            fp.write("property float x\nproperty float y\nproperty float z\n")
+            fp.write("element face {}\n".format(len(self.faces)))
+            fp.write("property list uchar int vertex_indices\n")
+            fp.write("property uchar red\nproperty uchar green\nproperty uchar blue\nproperty uchar alpha\n")
+            fp.write("end_header\n")
+            for i in range(0, vertices.size, 3):
+                x = vertices[i + 0]
+                y = vertices[i + 1]
+                z = vertices[i + 2]
+                fp.write("{0:.6f} {1:.6f} {2:.6f}\n".format(x, y, z))
+            
+            for i in range(0, len(indices), 3):
+                i0 = indices[i + 0]
+                i1 = indices[i + 1]
+                i2 = indices[i + 2]
+                c0 = fnormals[i + 0]
+                c1 = fnormals[i + 1]
+                c2 = fnormals[i + 2]
+                c0 = np.clip(int(255 * c0), 0, 255)
+                c1 = np.clip(int(255 * c1), 0, 255)
+                c2 = np.clip(int(255 * c2), 0, 255)
+                c3 = 255
+                fp.write("3 {0} {1} {2} {3} {4} {5} {6}\n".format(i0, i1, i2, c0, c1, c2, c3))
+
+    """ ---------- we don't use functions below ---------- """
     
     def pool_main(self, target_v):
         vs, vf, fn, fc, edges = self.vs, self.vf, self.fn, self.fc, self.edges
@@ -344,7 +409,7 @@ class Mesh:
                         E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T))
                         heapq.heappush(E_heap, (E_new, edge_id))
         self.clean(mask)
-    
+
     def pool_edge(self, edge_id, mask):
         if self.has_boundaries(edge_id):
             return False
@@ -428,154 +493,3 @@ class Mesh:
             v = list(set(self.edges[cycle[i]]) & set(self.edges[cycle[(i + 1) % 3]]))[0]
             face.append(v_indices[v])
         return face
-        
-    def save(self, filename):
-        assert len(self.vs) > 0
-        vertices = np.array(self.vs, dtype=np.float32).flatten()
-        indices = np.array(self.faces, dtype=np.uint32).flatten()
-
-        with open(filename, 'w') as fp:
-            # Write positions
-            for i in range(0, vertices.size, 3):
-                x = vertices[i + 0]
-                y = vertices[i + 1]
-                z = vertices[i + 2]
-                fp.write('v {0:.8f} {1:.8f} {2:.8f}\n'.format(x, y, z))
-
-            # Write indices
-            for i in range(0, len(indices), 3):
-                i0 = indices[i + 0] + 1
-                i1 = indices[i + 1] + 1
-                i2 = indices[i + 2] + 1
-                fp.write('f {0} {1} {2}\n'.format(i0, i1, i2))
-
-    def export(self, file, vcolor=None):
-        faces = []
-        vs = self.vs[self.v_mask]
-        gemm = np.array(self.gemm_edges)
-        import pdb;pdb.set_trace()
-        new_indices = np.zeros(self.v_mask.shape[0], dtype=np.int32)
-        new_indices[self.v_mask] = np.arange(0, np.ma.where(self.v_mask)[0].shape[0])
-        for edge_index in range(len(gemm)):
-            cycles = self.__get_cycle(gemm, edge_index)
-            for cycle in cycles:
-                faces.append(self.__cycle_to_face(cycle, new_indices))
-        with open(file, 'w+') as f:
-            for vi, v in enumerate(vs):
-                vcol = ' %f %f %f' % (vcolor[vi, 0], vcolor[vi, 1], vcolor[vi, 2]) if vcolor is not None else ''
-                f.write("v %f %f %f%s\n" % (v[0], v[1], v[2], vcol))
-            for face_id in range(len(faces) - 1):
-                f.write("f %d %d %d\n" % (faces[face_id][0] + 1, faces[face_id][1] + 1, faces[face_id][2] + 1))
-            f.write("f %d %d %d" % (faces[-1][0] + 1, faces[-1][1] + 1, faces[-1][2] + 1))
-            for edge in self.edges:
-                f.write("\ne %d %d" % (new_indices[edge[0]] + 1, new_indices[edge[1]] + 1))
-    
-    def save_as_ply(self, filename, fn):
-        assert len(self.vs) > 0
-        vertices = np.array(self.vs, dtype=np.float32).flatten()
-        indices = np.array(self.faces, dtype=np.uint32).flatten()
-        fnormals = np.array(fn, dtype=np.float32).flatten()
-
-        with open(filename, 'w') as fp:
-            # Write Header
-            fp.write("ply\nformat ascii 1.0\nelement vertex {}\n".format(len(self.vs)))
-            fp.write("property float x\nproperty float y\nproperty float z\n")
-            fp.write("element face {}\n".format(len(self.faces)))
-            fp.write("property list uchar int vertex_indices\n")
-            fp.write("property uchar red\nproperty uchar green\nproperty uchar blue\nproperty uchar alpha\n")
-            fp.write("end_header\n")
-            for i in range(0, vertices.size, 3):
-                x = vertices[i + 0]
-                y = vertices[i + 1]
-                z = vertices[i + 2]
-                fp.write("{0:.6f} {1:.6f} {2:.6f}\n".format(x, y, z))
-            
-            for i in range(0, len(indices), 3):
-                i0 = indices[i + 0]
-                i1 = indices[i + 1]
-                i2 = indices[i + 2]
-                c0 = fnormals[i + 0]
-                c1 = fnormals[i + 1]
-                c2 = fnormals[i + 2]
-                c0 = np.clip(int(255 * c0), 0, 255)
-                c1 = np.clip(int(255 * c1), 0, 255)
-                c2 = np.clip(int(255 * c2), 0, 255)
-                c3 = 255
-                fp.write("3 {0} {1} {2} {3} {4} {5} {6}\n".format(i0, i1, i2, c0, c1, c2, c3))
-
-class Vertex:
-    def __init__(self, x=0, y=0, z=0, index=None, halfedge=None):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.index = index
-        self.halfedge = halfedge
-
-class Face:
-    def __init__(self, a=-1, b=-1, c=-1, index=None, halfedge=None):
-        self.a = a
-        self.b = b
-        self.c = c
-        self.index = index
-        self.halfedge = halfedge
-
-class Halfedge:
-    def __init__(self, vertex=None, face=None, pair=None, next=None, prev=None, index=None):
-        self.vertex = vertex
-        self.face = face
-        self.pair = pair
-        self.next = next
-        self.prev = prev
-        self.index = index
-
-        if vertex.halfedge == None:
-            vertex.halfedge = self
-
-class HalfedgeMesh:
-    def __init__(self, mesh):
-        self.faces = []
-        self.vertices = []
-        self.halfedge = []
-        self.mesh = mesh
-        self.mesh_to_halfedgeMesh(self.mesh.vs, self.mesh.faces)
-
-    
-    def set_halfedge_pair(self, he):
-        for i in range(len(self.faces)):
-            he_in_face = self.faces[i].halfedge
-            while True:
-                if he.vertex == he_in_face.next.vertex and he.next.vertex == he_in_face.vertex:
-                    he.pair = he_in_face
-                    he_in_face.pair = he
-                    return
-                he_in_face = he_in_face.next
-                
-                if he_in_face == self.faces[i].halfedge:
-                    break
-    
-    def addface(self, v0, v1, v2):
-        he0 = Halfedge(vertex=v0)
-        he1 = Halfedge(vertex=v1)
-        he2 = Halfedge(vertex=v2)
-
-        he0.next, he0.prev = he1, he2
-        he1.next, he1.prev = he2, he0
-        he2.next, he2.prev = he0, he1
-
-        face = Face(halfedge=he0)
-        self.faces.append(face)
-        
-        he0.face = face
-        he1.face = face
-        he2.face = face
-        self.set_halfedge_pair(he0)
-        self.set_halfedge_pair(he1)
-        self.set_halfedge_pair(he2)
-
-    def mesh_to_halfedgeMesh(self, vs, faces):
-        for v_i in vs:
-            v = Vertex(x=v_i[0], y=v_i[1], z=v_i[2])
-            self.vertices.append(v)
-        
-        for f_i in faces:
-            self.addface(self.vertices[f_i[0]], self.vertices[f_i[1]], self.vertices[f_i[2]])
