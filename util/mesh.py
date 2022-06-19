@@ -1,3 +1,4 @@
+from csv import unix_dialect
 import numpy as np
 import torch
 from functools import reduce
@@ -14,6 +15,7 @@ class Mesh:
         self.compute_face_normals()
         self.compute_face_center()
         self.device = 'cpu'
+        self.simp = False
         
         if manifold:
             self.build_gemm() #self.edges, self.ve
@@ -209,7 +211,7 @@ class Mesh:
         vi_mask = np.ones([len(simp_mesh.vs)]).astype(np.bool)
         fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool)
 
-        vert_map = [set() for i in range(len(simp_mesh.vs))]
+        vert_map = [{i} for i in range(len(simp_mesh.vs))]
 
         while np.sum(vi_mask) > target_v:
             if len(E_heap) == 0:
@@ -241,7 +243,9 @@ class Mesh:
                 print(np.sum(vi_mask), np.sum(fi_mask))
         
         self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
-
+        simp_mesh.simp = True
+        self.pool_hash(simp_mesh, vi_mask, vert_map)
+        
         return simp_mesh
     
     @staticmethod
@@ -301,6 +305,37 @@ class Mesh:
             for j in range(3):
                 simp_mesh.faces[i][j] = face_map[f[j]]
         
+        simp_mesh.compute_face_normals()
+        simp_mesh.compute_face_center()
+        simp_mesh.build_gemm()
+        simp_mesh.compute_vert_normals()
+        simp_mesh.build_v2v()
+        simp_mesh.build_vf()
+
+    @staticmethod
+    def pool_hash(simp_mesh, vi_mask, vert_map):
+        pool_hash = {}
+        unpool_hash = {}
+        for simp_i, idx in enumerate(np.where(vi_mask)[0]):
+            if len(vert_map[idx]) == 0:
+                print("[ERROR] parent node cannot be found!")
+                return
+            for org_i in vert_map[idx]:
+                pool_hash[org_i] = simp_i
+            unpool_hash[simp_i] = list(vert_map[idx])
+        
+        """ check """
+        vl_sum = 0
+        for vl in unpool_hash.values():
+            vl_sum += len(vl)
+
+        if (len(set(pool_hash.keys())) != len(vi_mask)) or (vl_sum != len(vi_mask)):
+            print("[ERROR] Original vetices cannot be covered!")
+            return
+
+        simp_mesh.pool_hash = pool_hash
+        simp_mesh.unpool_hash = unpool_hash
+            
     def save(self, filename):
         assert len(self.vs) > 0
         vertices = np.array(self.vs, dtype=np.float32).flatten()
