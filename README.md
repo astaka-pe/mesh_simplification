@@ -167,8 +167,8 @@ python simplification.py
 
 <table>
   <tr>
-    <td width="48%">重みなし簡略化（0.5%）</td>
-    <td width="48%">重みあり簡略化</td>
+    <td width="48%">valence考慮なし（簡略化0.5%）</td>
+    <td width="48%">valence考慮あり（簡略化0.5%）</td>
   </tr>
   <tr>
     <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
@@ -190,7 +190,7 @@ python simplification.py
   </tr>
 </table>
 
-現在の実装では、境界がないメッシュを想定しており、`valence=6`を最適とした重みづけを行なっている。また、`valence=3`の頂点を生じるエッジ縮約には、過度に大きな重みを設定している。
+現在の実装では、境界がないメッシュを想定し、`valence=6`を最適とする重みづけを行う。すなわち、`valance`が6から離れるほど大きなペナルティが加わる。また、`valence=3`の頂点を生じるエッジ縮約には、過度に大きなペナルティを設定している。
 
 valenceの考慮には、引数 `valence_aware`を設定する。
 ```
