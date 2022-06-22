@@ -8,6 +8,9 @@ import heapq
 import copy
 from sklearn.preprocessing import normalize
 
+OPTIM_VALENCE = 6
+VALENCE_WEIGHT = 1
+
 class Mesh:
     def __init__(self, path, build_code=False, build_mat=False, manifold=True):
         self.path = path
@@ -176,7 +179,7 @@ class Mesh:
         self.v2v_mat = torch.sparse.FloatTensor(v2v_inds, v2v_vals, size=torch.Size([len(self.vs), len(self.vs)]))
         self.v_dims = torch.sum(self.v2v_mat.to_dense(), axis=1)
 
-    def simplification(self, target_v):
+    def simplification(self, target_v, valence_aware=True):
         vs, vf, fn, fc, edges = self.vs, self.vf, self.fn, self.fc, self.edges
 
         """ 1. compute Q for each vertex """
@@ -189,7 +192,6 @@ class Mesh:
             d_s = - 1.0 * np.sum(fn_s * fc_s, axis=1, keepdims=True)
             abcd_s = np.concatenate([fn_s, d_s], axis=1)
             Q_s[i] = np.matmul(abcd_s.T, abcd_s)
-
             v4 = np.concatenate([v, np.array([1])])
             E_s[i] = np.matmul(v4, np.matmul(Q_s[i], v4.T))
 
@@ -199,10 +201,16 @@ class Mesh:
             v_0, v_1 = vs[e[0]], vs[e[1]]
             v_new = 0.5 * (v_0 + v_1)
             v4_new = np.concatenate([v_new, np.array([1])])
+
+            valence_penalty = 1
+            if valence_aware:
+                merged_faces = vf[e[0]].intersection(vf[e[1]])
+                valence_new = len(vf[e[0]].union(vf[e[1]]).difference(merged_faces))
+                valence_penalty = self.valence_weight(valence_new)
             
             Q_0, Q_1 = Q_s[e[0]], Q_s[e[1]]
             Q_new = Q_0 + Q_1
-            E_new = np.matmul(v4_new, np.matmul(Q_new, v4_new.T))
+            E_new = np.matmul(v4_new, np.matmul(Q_new, v4_new.T)) * valence_penalty
             heapq.heappush(E_heap, (E_new, (e[0], e[1])))
         
         """ 3. collapse minimum-error vertex """
@@ -239,26 +247,27 @@ class Mesh:
                 continue
 
             else:
-                self.edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap)
+                self.edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap, valence_aware=valence_aware)
                 print(np.sum(vi_mask), np.sum(fi_mask))
         
         self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
         simp_mesh.simp = True
-        self.pool_hash(simp_mesh, vi_mask, vert_map)
+        self.build_hash(simp_mesh, vi_mask, vert_map)
         
         return simp_mesh
     
     @staticmethod
     def remove_tri_valance(simp_mesh, vi_0, vi_1, shared_vv, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap):
         #import pdb;pdb.set_trace()
-        pass
-        
+        pass  
     
-    @staticmethod
-    def edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap):
+    def edge_collapse(self, simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap, valence_aware):
+        shared_vv = list(set(simp_mesh.v2v[vi_0]).intersection(set(simp_mesh.v2v[vi_1])))
         new_vi_0 = set(simp_mesh.v2v[vi_0]).union(set(simp_mesh.v2v[vi_1])).difference({vi_0, vi_1})
         simp_mesh.vf[vi_0] = simp_mesh.vf[vi_0].union(simp_mesh.vf[vi_1]).difference(merged_faces)
         simp_mesh.vf[vi_1] = set()
+        simp_mesh.vf[shared_vv[0]] = simp_mesh.vf[shared_vv[0]].difference(merged_faces)
+        simp_mesh.vf[shared_vv[1]] = simp_mesh.vf[shared_vv[1]].difference(merged_faces)
 
         simp_mesh.v2v[vi_0] = list(new_vi_0)
         for v in simp_mesh.v2v[vi_1]:
@@ -282,8 +291,22 @@ class Mesh:
             Q_1 = Q_s[vv_i]
             Q_new = Q_0 + Q_1
             v4_mid = np.concatenate([v_mid, np.array([1])])
-            E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T))
+
+            valence_penalty = 1
+            if valence_aware:
+                merged_faces = simp_mesh.vf[vi_0].intersection(simp_mesh.vf[vv_i])
+                valence_new = len(simp_mesh.vf[vi_0].union(simp_mesh.vf[vv_i]).difference(merged_faces))
+                valence_penalty = self.valence_weight(valence_new)
+
+            E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T)) * valence_penalty
             heapq.heappush(E_heap, (E_new, (vi_0, vv_i)))
+
+    @staticmethod
+    def valence_weight(valence_new):
+        valence_penalty = abs(valence_new - OPTIM_VALENCE) * VALENCE_WEIGHT + 1
+        if valence_new == 3:
+            valence_penalty *= 100000
+        return valence_penalty      
     
     @staticmethod
     def rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map):
@@ -313,7 +336,7 @@ class Mesh:
         simp_mesh.build_vf()
 
     @staticmethod
-    def pool_hash(simp_mesh, vi_mask, vert_map):
+    def build_hash(simp_mesh, vi_mask, vert_map):
         pool_hash = {}
         unpool_hash = {}
         for simp_i, idx in enumerate(np.where(vi_mask)[0]):
@@ -332,7 +355,8 @@ class Mesh:
         if (len(set(pool_hash.keys())) != len(vi_mask)) or (vl_sum != len(vi_mask)):
             print("[ERROR] Original vetices cannot be covered!")
             return
-
+        
+        pool_hash = sorted(pool_hash.items(), key=lambda x:x[0])
         simp_mesh.pool_hash = pool_hash
         simp_mesh.unpool_hash = unpool_hash
             
