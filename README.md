@@ -1,56 +1,54 @@
-# メッシュ簡略化
-"Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
+# Mesh Simplification
+The python script for "Surface Simplification Using Quadric Error Metrics"
 
-## アルゴリズム
+[[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
 
-### 概要
-頂点 $\mathbf{v}=(v_x, v_y, v_z, 1)^T$ 
-毎のコストを、
-$4\times4$
-対称行列
-$Q$
-を用いて、二次形式
+## Algorithm
+
+### Overview
+
+Define the cost function of each vertex
+$\mathbf{v}=(v_x, v_y, v_z, 1)^T$ 
+by using the symmetric matrix Q:
 $\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$
-で定義。
-縮約した場合に、コストが最小となる頂点ペアから縮約する。
 
-### 手順
-1. 初期頂点で対称行列
-   $Q$
-   を計算する（後述）
-3. 縮約できる頂点ペアをリストアップする
-4. 2.の各頂点ペアに対し、縮約した場合のコストを計算する
-   - 頂点
-$\mathbf{v}_1$
-を
-$\mathbf{v}_2$
-にマージする場合、生成される頂点を
-$\mathbf{\bar{v}}=\frac{1}{2}(\mathbf{v}_1+\mathbf{v}_2)$
-として、
-$\mathbf{\bar{v}}^T (Q_1+Q_2) \mathbf{\bar{v}}$
-を頂点ペア
-$(\mathbf{v}_1, \mathbf{v}_2)$
-のコストとする。
-4. 3.で計算した各頂点ペアのコストを格納するヒープを作成
-5. ヒープから最小コストとなる頂点ペア
-$(\mathbf{v}_1, \mathbf{v}_2)$
-を取り出し、そのエッジを縮約する
-   - この際、頂点
-$\mathbf{v}_1$
-が関与する全ての頂点ペアに対するコストを更新する
-  
-### Q の定義
+Iteratively remove the pair of least cost.
+### Procedure
 
-頂点周りの平面（三角形）を表す方程式を、
+1. Compute the symmetric matrix
+$Q$
+for all the initial vertices.
+2. Select all valid pairs.
+3. Compute the optimal contratcion for each valid pair.
+  - When merging
+  $\mathbf{v}_1$
+  to
+  $\mathbf{v}_2$
+  , the cost of the contraction is defined as
+  $\mathbf{\bar{v}}^T (Q_1+Q_2) \mathbf{\bar{v}}$
+  , where 
+  $\mathbf{\bar{v}}=\frac{1}{2}(\mathbf{v}_1+\mathbf{v}_2)$
+  means the newly inserted vertex.
+4. Place all the pairs in a heap.
+5. Iteratively remove the pair
+$(\mathbf{v}_1, \mathbf{v}_2)$
+of least cost from the heap, and update the costs of all valid pairs involving
+$\mathbf{v}_1$
+.
+
+### Definition of Q
+
+A plane can be definedby the equation
 $ax+by+cz+d=0$
-とする。ただし、
+where
 $a^2+b^2+c^2=1$
-である。
-すなわち、
+.
+Note that
 $(a, b, c)^T$
-は三角形の法線ベクトルを意味し、三角形の重心座標を
+means the facet normal of the plane.
+When we define the barycenter of the plane as 
 $(c_x, c_y, c_z)$
-とすると、
+,
 
 $$
 d = -1 \times
@@ -70,21 +68,19 @@ c_z\\
 \end{matrix}
 \right]
 $$
+.
 
-と表せる。
-$\mathbf{p}=(a,b,c,d)^T$
-として、
-頂点
+The distance from a vertex
 $\mathbf{v}$
-から周囲の平面（三角形）
-$\mathbf{p}$
-までの距離は
+to the plane
+$\mathbf{p}=(a,b,c,d)^T$
+can be defined as
 
 $$
 \mathbf{p}^T \mathbf{v} = a v_x+ b v_y + c v_z + d
 $$
 
-と表現でき、これらの二乗誤差の総和は、
+and, the sum of squared distances to its planes can be defined as
 
 $$
 \begin{align}
@@ -93,8 +89,11 @@ $$
 =& \mathbf{v}^T \left(\sum_{\mathbf{p} \in N(\mathbf{v})}\mathbf{p}\mathbf{p}^T \right) \mathbf{v} \\
 \end{align}
 $$
+.
 
-となる。ここで、
+By introducing
+$K_p$
+as
 
 $$ K_p = \mathbf{p}\mathbf{p}^T =
 \left[
@@ -106,24 +105,24 @@ ad & bd & cd & d^2
 \end{matrix} 
 \right]
 $$
+,
 
+the error metric can be rewritten as a quadric form
+
+$$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$$
+where
 $$
 Q = \sum_{\mathbf{p} \in N(\mathbf{v})} K_p
 $$
+.
 
-と定義することで、頂点のコストを二次形式
-
-$$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$$
-
-で表せる。
-
-## ライブラリ
+## Environments
 ```
 numpy
 torch
 ```
 
-## デモ
+## Demo
 
 ```
 python simplification.py
@@ -131,10 +130,10 @@ python simplification.py
 
 <table>
   <tr>
-    <td width="24%">入力</td>
-    <td width="24%">簡略化(50%)</td>
-    <td width="24%">簡略化(20%)</td>
-    <td width="24%">簡略化(1%)</td>
+    <td width="24%">Input</td>
+    <td width="24%">Result(50%)</td>
+    <td width="24%">Result(20%)</td>
+    <td width="24%">Result(1%)</td>
   </tr>
   <tr>
     <td width="24%"><img src="docs/original.png" width="100%"/></td>
@@ -157,18 +156,14 @@ python simplification.py
   </tr>
 </table>
 
-本スクリプトは改良途中。
-非多様体を生じるエッジ縮約や、境界エッジの縮約は行わない。
-エッジ角度を考慮していないため、自己交差や面のフリップが生じうる。
+### Valance-aware simplification
 
-### valenceを考慮したエッジ縮約
-
-三角形品質を向上させるため、頂点毎のvalence（価数）を考慮したエッジ縮約を実装した。
+Implemented valence-aware simplification to improve the quality of triangles
 
 <table>
   <tr>
-    <td width="48%">valence考慮なし（簡略化0.5%）</td>
-    <td width="48%">valence考慮あり（簡略化0.5%）</td>
+    <td width="48%">Straight forward（0.5%）</td>
+    <td width="48%">valence-aware（0.5%）</td>
   </tr>
   <tr>
     <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
@@ -177,39 +172,22 @@ python simplification.py
   <tr>
     <td width="48%">
       <ul>
-        <li>価数がバラバラ</li>
-        <li>それ以上簡略化できない（価数3の）頂点を生じる</li>
-        <li>三角形の形状が不均一</li>
+        <li>Uneven valence</li>
+        <li>Valence 3 occurs (Big problem)</li>
       </ul>
     </td>
     <td width="48%">
       <ul>
-        <li>価数6の頂点が増加</li>
-        <li>正三角形に近い形状に揃う</li>
+        <li>Valence 6 increased</li>
+        <li>Close to regular triangle</li>
       </ul>
     </td>
   </tr>
 </table>
 
-現在の実装では、境界がないメッシュを想定し、`valence=6`を最適とする重みづけを行う。すなわち、valenceが6から離れるほど大きなペナルティが加わる。また、`valence=3`の頂点を生じるエッジ縮約には、過度に大きなペナルティを設定している。
+The further the valence is away from 6, the heavier the penalty. An excessively large penalty is set for an edge contraction that results in valence 3.
+Note that we consider only a mesh without boundary.
 
-valenceの考慮には、引数 `valence_aware`を設定する。
 ```
 simp_mesh = mesh.simplification(target_v=v1, valence_aware=True)
 ```
-
-## TODO
-
-- [x] （縮約すると多様体を生じる）valence=3の頂点を発生させないようにする
-- [ ] エッジ角度を考慮した縮約
-- [ ] 更新後頂点位置の最適化（現在は中点）
-
-## 実装メモ
-
-- `vert_map`: 各頂点**に**どの頂点**が**マージされたか、を保持。1対多。
-  - 自身の頂点番号で初期化
-  - v2をv1にマージする場合、v2のsetをv1のsetに統合し、v2のsetを空にする
-
-- `vert_dict`: 各頂点**が**どの頂点**に**マージされたか、を保持。1対1。
-
-- `face_map`: 簡略前の頂点番号が簡略後にどの頂点番号に移動するか、を保持。1対1。
