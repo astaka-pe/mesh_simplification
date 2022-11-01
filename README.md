@@ -1,7 +1,8 @@
-# Mesh Simplification
-The python script for "Surface Simplification Using Quadric Error Metrics"
+[English] [[日本語]](README_ja.md)
 
-[[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
+# Mesh Simplification
+
+The python script for "Surface Simplification Using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
 
 ## Algorithm
 
@@ -9,10 +10,13 @@ The python script for "Surface Simplification Using Quadric Error Metrics"
 
 Define the cost function of each vertex
 $\mathbf{v}=(v_x, v_y, v_z, 1)^T$ 
-by using the symmetric matrix Q:
-$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$
+by using the symmetric matrix
+$Q$
 
-Iteratively remove the pair of least cost.
+$$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$$
+
+Then iteratively remove the pair of least cost.
+
 ### Procedure
 
 1. Compute the symmetric matrix
@@ -66,9 +70,9 @@ c_x\\
 c_y\\
 c_z\\
 \end{matrix}
-\right]
+\right].
 $$
-.
+
 
 The distance from a vertex
 $\mathbf{v}$
@@ -86,10 +90,9 @@ $$
 \begin{align}
 \Delta(\mathbf{v}) =& \sum_{\mathbf{p} \in N(\mathbf{v})}(\mathbf{p}^T \mathbf{v})^2 \\
 =& \sum_{\mathbf{p} \in N(\mathbf{v})}(\mathbf{v}^T \mathbf{p})(\mathbf{p}^T \mathbf{v}) \\
-=& \mathbf{v}^T \left(\sum_{\mathbf{p} \in N(\mathbf{v})}\mathbf{p}\mathbf{p}^T \right) \mathbf{v} \\
+=& \mathbf{v}^T \left(\sum_{\mathbf{p} \in N(\mathbf{v})}\mathbf{p}\mathbf{p}^T \right) \mathbf{v}. \\
 \end{align}
 $$
-.
 
 By introducing
 $K_p$
@@ -103,18 +106,18 @@ ab & b^2 & bc & bd \\
 ac & bc & c^2 & cd \\
 ad & bd & cd & d^2  
 \end{matrix} 
-\right]
+\right],
 $$
-,
 
 the error metric can be rewritten as a quadric form
 
 $$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$$
 where
+
 $$
-Q = \sum_{\mathbf{p} \in N(\mathbf{v})} K_p
+Q = \sum_{\mathbf{p} \in N(\mathbf{v})} K_p .
 $$
-.
+
 
 ## Environments
 ```
