@@ -5,8 +5,10 @@
 
 ## ライブラリ
 ```
-numpy
-torch
+pytorch==1.7
+scipy==1.6
+numpy==1.19
+scikit-learn==0.24
 ```
 
 ## 使用方法
