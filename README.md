@@ -4,6 +4,25 @@
 
 The python script for "Surface Simplification Using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
 
+
+## Environments
+```
+numpy
+torch
+```
+
+## Usage
+
+```
+python simplification.py --i data/ankylosaurus.obj --v 1000 --optim
+```
+A simplified mesh will be output in `data/output/`.
+
+### Parameters
+- `-i`: Input file name
+- `--v`: Target vertex number
+- `--optim`: Valence aware simplification
+
 ## Algorithm
 
 ### Overview
@@ -119,17 +138,7 @@ Q = \sum_{\mathbf{p} \in N(\mathbf{v})} K_p .
 $$
 
 
-## Environments
-```
-numpy
-torch
-```
-
-## Demo
-
-```
-python simplification.py
-```
+## Example
 
 <table>
   <tr>
@@ -159,7 +168,7 @@ python simplification.py
   </tr>
 </table>
 
-### Valance-aware simplification
+### Valence-aware simplification
 
 Implemented valence-aware simplification to improve the quality of triangles
 

@@ -3,6 +3,23 @@
 # メッシュ簡略化
 "Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
 
+## ライブラリ
+```
+numpy
+torch
+```
+
+## 使用方法
+```
+python simplification.py --i data/ankylosaurus.obj --v 1000 --optim
+```
+簡略化後のメッシュは `data/output/` に出力される.
+
+### パラメータ
+- `-i`: 入力メッシュ名（*.obj）
+- `--v`: 簡略化後の頂点数
+- `--optim`: valenceを考慮する場合に指定
+
 ## アルゴリズム
 
 ### 概要
@@ -119,17 +136,7 @@ $$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$$
 
 で表せる。
 
-## ライブラリ
-```
-numpy
-torch
-```
-
-## デモ
-
-```
-python simplification.py
-```
+## 例
 
 <table>
   <tr>

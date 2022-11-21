@@ -223,7 +223,7 @@ class Mesh:
 
         while np.sum(vi_mask) > target_v:
             if len(E_heap) == 0:
-                print("edge cannot be collapsed anymore!")
+                print("[Warning]: edge cannot be collapsed anymore!")
                 break
 
             E_0, (vi_0, vi_1) = heapq.heappop(E_heap)
@@ -237,18 +237,18 @@ class Mesh:
 
             if len(shared_vv) != 2:
                 """ non-manifold! """
-                print("non-manifold can be occured!!" , len(shared_vv))
+                # print("non-manifold can be occured!!" , len(shared_vv))
                 self.remove_tri_valance(simp_mesh, vi_0, vi_1, shared_vv, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap)
                 continue
 
             elif len(merged_faces) != 2:
                 """ boundary """
-                print("boundary edge cannot be collapsed!")
+                # print("boundary edge cannot be collapsed!")
                 continue
 
             else:
                 self.edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap, valence_aware=valence_aware)
-                print(np.sum(vi_mask), np.sum(fi_mask))
+                # print(np.sum(vi_mask), np.sum(fi_mask))
         
         self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
         simp_mesh.simp = True
