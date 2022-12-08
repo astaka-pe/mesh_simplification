@@ -253,6 +253,61 @@ class Mesh:
         
         return simp_mesh
     
+    def edge_based_simplification(self, target_v, valence_aware=True):
+        vs, vf, fn, fc, edges = self.vs, self.vf, self.fn, self.fc, self.edges
+        edge_len = vs[edges][:,0,:] - vs[edges][:,1,:]
+        edge_len = np.linalg.norm(edge_len, axis=1)
+        edge_len_heap = np.stack([edge_len, np.arange(len(edge_len))], axis=1).tolist()
+        heapq.heapify(edge_len_heap)
+
+        """ 2. compute E for every possible pairs and create heapq """
+        E_heap = []
+        for i, e in enumerate(edges):
+            v_0, v_1 = vs[e[0]], vs[e[1]]
+            heapq.heappush(E_heap, (edge_len[i], (e[0], e[1])))
+        
+        """ 3. collapse minimum-error vertex """
+        simp_mesh = copy.deepcopy(self)
+
+        vi_mask = np.ones([len(simp_mesh.vs)]).astype(np.bool)
+        fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool)
+
+        vert_map = [{i} for i in range(len(simp_mesh.vs))]
+
+        while np.sum(vi_mask) > target_v:
+            if len(E_heap) == 0:
+                print("[Warning]: edge cannot be collapsed anymore!")
+                break
+
+            E_0, (vi_0, vi_1) = heapq.heappop(E_heap)
+
+            if (vi_mask[vi_0] == False) or (vi_mask[vi_1] == False):
+                continue
+
+            """ edge collapse """
+            shared_vv = list(set(simp_mesh.v2v[vi_0]).intersection(set(simp_mesh.v2v[vi_1])))
+            merged_faces = simp_mesh.vf[vi_0].intersection(simp_mesh.vf[vi_1])
+
+            if len(shared_vv) != 2:
+                """ non-manifold! """
+                # print("non-manifold can be occured!!" , len(shared_vv))
+                continue
+
+            elif len(merged_faces) != 2:
+                """ boundary """
+                # print("boundary edge cannot be collapsed!")
+                continue
+
+            else:
+                self.edge_based_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, E_heap, valence_aware=valence_aware)
+                # print(np.sum(vi_mask), np.sum(fi_mask))
+        
+        self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
+        simp_mesh.simp = True
+        self.build_hash(simp_mesh, vi_mask, vert_map)
+        
+        return simp_mesh
+    
     @staticmethod
     def remove_tri_valance(simp_mesh, vi_0, vi_1, shared_vv, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap):
         #import pdb;pdb.set_trace()
@@ -297,6 +352,42 @@ class Mesh:
 
             E_new = np.matmul(v4_mid, np.matmul(Q_new, v4_mid.T)) * valence_penalty
             heapq.heappush(E_heap, (E_new, (vi_0, vv_i)))
+
+    def edge_based_collapse(self, simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, E_heap, valence_aware):
+        shared_vv = list(set(simp_mesh.v2v[vi_0]).intersection(set(simp_mesh.v2v[vi_1])))
+        new_vi_0 = set(simp_mesh.v2v[vi_0]).union(set(simp_mesh.v2v[vi_1])).difference({vi_0, vi_1})
+        simp_mesh.vf[vi_0] = simp_mesh.vf[vi_0].union(simp_mesh.vf[vi_1]).difference(merged_faces)
+        simp_mesh.vf[vi_1] = set()
+        simp_mesh.vf[shared_vv[0]] = simp_mesh.vf[shared_vv[0]].difference(merged_faces)
+        simp_mesh.vf[shared_vv[1]] = simp_mesh.vf[shared_vv[1]].difference(merged_faces)
+
+        simp_mesh.v2v[vi_0] = list(new_vi_0)
+        for v in simp_mesh.v2v[vi_1]:
+            if v != vi_0:
+                simp_mesh.v2v[v] = list(set(simp_mesh.v2v[v]).difference({vi_1}).union({vi_0}))
+        simp_mesh.v2v[vi_1] = []
+        vi_mask[vi_1] = False
+
+        vert_map[vi_0] = vert_map[vi_0].union(vert_map[vi_1])
+        vert_map[vi_0] = vert_map[vi_0].union({vi_1})
+        vert_map[vi_1] = set()
+        
+        fi_mask[np.array(list(merged_faces)).astype(np.int)] = False
+
+        simp_mesh.vs[vi_0] = 0.5 * (simp_mesh.vs[vi_0] + simp_mesh.vs[vi_1])
+
+        """ recompute E """
+        for vv_i in simp_mesh.v2v[vi_0]:
+            v_mid = 0.5 * (simp_mesh.vs[vi_0] + simp_mesh.vs[vv_i])
+            edge_len = np.linalg.norm(simp_mesh.vs[vi_0] - simp_mesh.vs[vv_i])
+            valence_penalty = 1
+            if valence_aware:
+                merged_faces = simp_mesh.vf[vi_0].intersection(simp_mesh.vf[vv_i])
+                valence_new = len(simp_mesh.vf[vi_0].union(simp_mesh.vf[vv_i]).difference(merged_faces))
+                valence_penalty = self.valence_weight(valence_new)
+                edge_len *= valence_penalty
+
+            heapq.heappush(E_heap, (edge_len, (vi_0, vv_i)))
 
     @staticmethod
     def valence_weight(valence_new):
