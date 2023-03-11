@@ -18,8 +18,8 @@ def main():
     if args.v >= mesh.vs.shape[0]:
         print("[ERROR]: Target vertex number should be smaller than {}!".format(mesh.vs.shape[0]))
         exit()
-    # simp_mesh = mesh.simplification(target_v=args.v, valence_aware=args.optim)
-    simp_mesh = mesh.edge_based_simplification(target_v=args.v, valence_aware=args.optim)
+    simp_mesh = mesh.simplification(target_v=args.v, valence_aware=args.optim)
+    # simp_mesh = mesh.edge_based_simplification(target_v=args.v, valence_aware=args.optim)
     os.makedirs("data/output/", exist_ok=True)
     simp_mesh.save("data/output/{}_{}.obj".format(mesh_name, simp_mesh.vs.shape[0]))
     print("[FIN] Simplification Completed!")
