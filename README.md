@@ -1,4 +1,4 @@
-[English] [[日本語]](README_ja.md)
+[English] [[Japanese]](README_ja.md)
 
 # Mesh Simplification
 
@@ -21,9 +21,41 @@ python simplification.py --i data/ankylosaurus.obj --v 1000 --optim
 A simplified mesh will be output in `data/output/`.
 
 ### Parameters
-- `-i`: Input file name
-- `--v`: Target vertex number
-- `--optim`: Valence aware simplification
+- `-i`: Input file name [Required]
+- `-v`: Target vertex number [Optional]
+- `-p`: Rate of simplification [Optional (Ignored by -v) | Default: 0.5]
+- `-optim`: Specify for valence aware simplification [Optional | Recommended]
+- `-isotropic`: Specify for isotropic simplification [Optional]
+
+## Example
+
+<table>
+  <tr>
+    <td width="24%">Input</td>
+    <td width="24%">Result (50%)</td>
+    <td width="24%">Result (20%)</td>
+    <td width="24%">Result (1%)</td>
+  </tr>
+  <tr>
+    <td width="24%"><img src="docs/original.png" width="100%"/></td>
+    <td width="24%"><img src="docs/simp_v1.png" width="100%"/></td>
+    <td width="24%"><img src="docs/simp_v2.png" width="100%"/></td>
+    <td width="24%"><img src="docs/simp_v4.png" width="100%"/></td>
+  </tr>
+
+  <tr>
+    <td width="24%">14762 vertices</td>
+    <td width="24%">7381 vertices</td>
+    <td width="24%">2952 vertices</td>
+    <td width="24%">147 vertices</td>
+  </tr>
+  <tr>
+    <td width="24%">29520 faces</td>
+    <td width="24%">14758 faces</td>
+    <td width="24%">5900 faces</td>
+    <td width="24%">290 faces</td>
+  </tr>
+</table>
 
 ## Algorithm
 
@@ -139,45 +171,15 @@ $$
 Q = \sum_{\mathbf{p} \in N(\mathbf{v})} K_p .
 $$
 
-
-## Example
-
-<table>
-  <tr>
-    <td width="24%">Input</td>
-    <td width="24%">Result(50%)</td>
-    <td width="24%">Result(20%)</td>
-    <td width="24%">Result(1%)</td>
-  </tr>
-  <tr>
-    <td width="24%"><img src="docs/original.png" width="100%"/></td>
-    <td width="24%"><img src="docs/simp_v1.png" width="100%"/></td>
-    <td width="24%"><img src="docs/simp_v2.png" width="100%"/></td>
-    <td width="24%"><img src="docs/simp_v4.png" width="100%"/></td>
-  </tr>
-
-  <tr>
-    <td width="24%">14762 vertices</td>
-    <td width="24%">7381 vertices</td>
-    <td width="24%">2952 vertices</td>
-    <td width="24%">147 vertices</td>
-  </tr>
-  <tr>
-    <td width="24%">29520 faces</td>
-    <td width="24%">14758 faces</td>
-    <td width="24%">5900 faces</td>
-    <td width="24%">290 faces</td>
-  </tr>
-</table>
-
+## Other results
 ### Valence-aware simplification
 
-Implemented valence-aware simplification to improve the quality of triangles
+Implementation of valence-aware simplification to improve the quality of triangles
 
 <table>
   <tr>
-    <td width="48%">Straight forward（0.5%）</td>
-    <td width="48%">valence-aware（0.5%）</td>
+    <td width="48%">Straight forward (0.5%)</td>
+    <td width="48%">valence-aware (0.5%)</td>
   </tr>
   <tr>
     <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
@@ -200,8 +202,36 @@ Implemented valence-aware simplification to improve the quality of triangles
 </table>
 
 The further the valence is away from 6, the heavier the penalty. An excessively large penalty is set for an edge contraction that results in valence 3.
-Note that we consider only a mesh without boundary.
 
-```
-simp_mesh = mesh.simplification(target_v=v1, valence_aware=True)
-```
+### Valence-aware simplification
+
+Implementation of isotropic simplification to enhance edge length uniformity
+
+### Isotropic Simplification
+<table>
+  <tr>
+    <td width="48%">Default (10%)</td>
+    <td width="48%">Isotropic (10%)</td>
+  </tr>
+  <tr>
+    <td width="48%"><img src="docs/unisotropic.png" width="100%"/></td>
+    <td width="48%"><img src="docs/isotropic.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="48%">
+      <ul>
+        <li>Uneven edge length</li>
+        <li>Feature preserved</li>
+      </ul>
+    </td>
+    <td width="48%">
+      <ul>
+        <li>Even edge length</li>
+        <li>Feature smoothed</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+## Limitation
+We consider only a mesh without boundary.
