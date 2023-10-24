@@ -18,9 +18,106 @@ python simplification.py --i data/ankylosaurus.obj --v 1000 --optim
 簡略化後のメッシュは `data/output/` に出力される.
 
 ### パラメータ
-- `-i`: 入力メッシュ名（*.obj）
-- `--v`: 簡略化後の頂点数
-- `--optim`: valenceを考慮する場合に指定
+- `-i`: 入力ファイル名 [必須]
+- `-v`: ターゲット超点数 [オプション]
+- `-p`: 簡略化比率 [オプション (-vを指定した場合には無効) | デフォルト: 0.5]
+- `-optim`: 価数最適化 [オプション | 推奨]
+- `-isotropic`: 等方的簡略化 [Optional]
+
+___
+
+## 簡略化のデモ
+
+<table>
+  <tr>
+    <td width="24%">入力</td>
+    <td width="24%">簡略化 (50%)</td>
+    <td width="24%">簡略化 (20%)</td>
+    <td width="24%">簡略化 (1%)</td>
+  </tr>
+  <tr>
+    <td width="24%"><img src="docs/original.png" width="100%"/></td>
+    <td width="24%"><img src="docs/simp_v1.png" width="100%"/></td>
+    <td width="24%"><img src="docs/simp_v2.png" width="100%"/></td>
+    <td width="24%"><img src="docs/simp_v4.png" width="100%"/></td>
+  </tr>
+
+  <tr>
+    <td width="24%">14762 vertices</td>
+    <td width="24%">7381 vertices</td>
+    <td width="24%">2952 vertices</td>
+    <td width="24%">147 vertices</td>
+  </tr>
+  <tr>
+    <td width="24%">29520 faces</td>
+    <td width="24%">14758 faces</td>
+    <td width="24%">5900 faces</td>
+    <td width="24%">290 faces</td>
+  </tr>
+</table>
+
+### 価数最適化
+
+三角形品質を向上させるため、頂点毎のvalence（価数）を考慮したエッジ縮約を実装した。
+
+<table>
+  <tr>
+    <td width="48%">価数最適化なし (0.5%)</td>
+    <td width="48%">価数最適化あり (0.5%)</td>
+  </tr>
+  <tr>
+    <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
+    <td width="48%"><img src="docs/with_valence.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="48%">
+      <ul>
+        <li>価数がバラバラ</li>
+        <li>それ以上簡略化できない（価数3の）頂点を生じる</li>
+        <li>三角形の形状が不均一</li>
+      </ul>
+    </td>
+    <td width="48%">
+      <ul>
+        <li>価数6の頂点が増加</li>
+        <li>正三角形に近い形状に揃う</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+現在の実装では、境界がないメッシュを想定し、`valence=6`を最適とする重みづけを行う。すなわち、valenceが6から離れるほど大きなペナルティが加わる。また、`valence=3`の頂点を生じるエッジ縮約には、過度に大きなペナルティを設定している。
+
+### 等方的簡略化
+
+エッジ長の不均一性を防ぐペナルティ項を追加。
+
+<table>
+  <tr>
+    <td width="48%">Default (10%)</td>
+    <td width="48%">Isotropic (10%)</td>
+  </tr>
+  <tr>
+    <td width="48%"><img src="docs/unisotropic.png" width="100%"/></td>
+    <td width="48%"><img src="docs/isotropic.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="48%">
+      <ul>
+        <li>エッジ長が不均一</li>
+        <li>特徴が保存される</li>
+      </ul>
+    </td>
+    <td width="48%">
+      <ul>
+        <li>エッジ長が均一</li>
+        <li>特徴が滑らかになる</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+___
 
 ## アルゴリズム
 
@@ -137,83 +234,20 @@ $$
 $$\Delta(\mathbf{v})=\mathbf{v}^T Q \mathbf{v}$$
 
 で表せる。
+___
 
-## 例
+## 制約事項
 
-<table>
-  <tr>
-    <td width="24%">入力</td>
-    <td width="24%">簡略化(50%)</td>
-    <td width="24%">簡略化(20%)</td>
-    <td width="24%">簡略化(1%)</td>
-  </tr>
-  <tr>
-    <td width="24%"><img src="docs/original.png" width="100%"/></td>
-    <td width="24%"><img src="docs/simp_v1.png" width="100%"/></td>
-    <td width="24%"><img src="docs/simp_v2.png" width="100%"/></td>
-    <td width="24%"><img src="docs/simp_v4.png" width="100%"/></td>
-  </tr>
+- 非多様体を生じるエッジ縮約や、境界エッジの縮約は行わない。
+- エッジ角度を考慮していないため、自己交差や面のフリップが生じうる。
 
-  <tr>
-    <td width="24%">14762 vertices</td>
-    <td width="24%">7381 vertices</td>
-    <td width="24%">2952 vertices</td>
-    <td width="24%">147 vertices</td>
-  </tr>
-  <tr>
-    <td width="24%">29520 faces</td>
-    <td width="24%">14758 faces</td>
-    <td width="24%">5900 faces</td>
-    <td width="24%">290 faces</td>
-  </tr>
-</table>
-
-本スクリプトは改良途中。
-非多様体を生じるエッジ縮約や、境界エッジの縮約は行わない。
-エッジ角度を考慮していないため、自己交差や面のフリップが生じうる。
-
-### valenceを考慮したエッジ縮約
-
-三角形品質を向上させるため、頂点毎のvalence（価数）を考慮したエッジ縮約を実装した。
-
-<table>
-  <tr>
-    <td width="48%">valence考慮なし（簡略化0.5%）</td>
-    <td width="48%">valence考慮あり（簡略化0.5%）</td>
-  </tr>
-  <tr>
-    <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
-    <td width="48%"><img src="docs/with_valence.png" width="100%"/></td>
-  </tr>
-  <tr>
-    <td width="48%">
-      <ul>
-        <li>価数がバラバラ</li>
-        <li>それ以上簡略化できない（価数3の）頂点を生じる</li>
-        <li>三角形の形状が不均一</li>
-      </ul>
-    </td>
-    <td width="48%">
-      <ul>
-        <li>価数6の頂点が増加</li>
-        <li>正三角形に近い形状に揃う</li>
-      </ul>
-    </td>
-  </tr>
-</table>
-
-現在の実装では、境界がないメッシュを想定し、`valence=6`を最適とする重みづけを行う。すなわち、valenceが6から離れるほど大きなペナルティが加わる。また、`valence=3`の頂点を生じるエッジ縮約には、過度に大きなペナルティを設定している。
-
-valenceの考慮には、引数 `valence_aware`を設定する。
-```
-simp_mesh = mesh.simplification(target_v=v1, valence_aware=True)
-```
-
+<!--
 ## TODO
 
 - [x] （縮約すると多様体を生じる）valence=3の頂点を発生させないようにする
 - [ ] エッジ角度を考慮した縮約
 - [ ] 更新後頂点位置の最適化（現在は中点）
+
 
 ## 実装メモ
 
@@ -224,3 +258,4 @@ simp_mesh = mesh.simplification(target_v=v1, valence_aware=True)
 - `vert_dict`: 各頂点**が**どの頂点**に**マージされたか、を保持。1対1。
 
 - `face_map`: 簡略前の頂点番号が簡略後にどの頂点番号に移動するか、を保持。1対1。
+-->

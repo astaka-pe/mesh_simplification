@@ -27,6 +27,8 @@ A simplified mesh will be output in `data/output/`.
 - `-optim`: Specify for valence aware simplification [Optional | Recommended]
 - `-isotropic`: Specify for isotropic simplification [Optional]
 
+___
+
 ## Example
 
 <table>
@@ -56,6 +58,67 @@ A simplified mesh will be output in `data/output/`.
     <td width="24%">290 faces</td>
   </tr>
 </table>
+
+### Valence-aware simplification
+
+Implementation of valence-aware simplification to improve the quality of triangles
+
+<table>
+  <tr>
+    <td width="48%">Straight forward (0.5%)</td>
+    <td width="48%">valence-aware (0.5%)</td>
+  </tr>
+  <tr>
+    <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
+    <td width="48%"><img src="docs/with_valence.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="48%">
+      <ul>
+        <li>Uneven valence</li>
+        <li>Valence 3 occurs (Big problem)</li>
+      </ul>
+    </td>
+    <td width="48%">
+      <ul>
+        <li>Valence 6 increased</li>
+        <li>Close to regular triangle</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+The further the valence is away from 6, the heavier the penalty. An excessively large penalty is set for an edge contraction that results in valence 3.
+
+### Isotropic Simplification
+Implementation of isotropic simplification to enhance edge length uniformity
+
+<table>
+  <tr>
+    <td width="48%">Default (10%)</td>
+    <td width="48%">Isotropic (10%)</td>
+  </tr>
+  <tr>
+    <td width="48%"><img src="docs/unisotropic.png" width="100%"/></td>
+    <td width="48%"><img src="docs/isotropic.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="48%">
+      <ul>
+        <li>Uneven edge length</li>
+        <li>Feature preserved</li>
+      </ul>
+    </td>
+    <td width="48%">
+      <ul>
+        <li>Even edge length</li>
+        <li>Feature smoothed</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+___
 
 ## Algorithm
 
@@ -171,67 +234,7 @@ $$
 Q = \sum_{\mathbf{p} \in N(\mathbf{v})} K_p .
 $$
 
-## Other results
-### Valence-aware simplification
-
-Implementation of valence-aware simplification to improve the quality of triangles
-
-<table>
-  <tr>
-    <td width="48%">Straight forward (0.5%)</td>
-    <td width="48%">valence-aware (0.5%)</td>
-  </tr>
-  <tr>
-    <td width="48%"><img src="docs/wo_valence.png" width="100%"/></td>
-    <td width="48%"><img src="docs/with_valence.png" width="100%"/></td>
-  </tr>
-  <tr>
-    <td width="48%">
-      <ul>
-        <li>Uneven valence</li>
-        <li>Valence 3 occurs (Big problem)</li>
-      </ul>
-    </td>
-    <td width="48%">
-      <ul>
-        <li>Valence 6 increased</li>
-        <li>Close to regular triangle</li>
-      </ul>
-    </td>
-  </tr>
-</table>
-
-The further the valence is away from 6, the heavier the penalty. An excessively large penalty is set for an edge contraction that results in valence 3.
-
-### Valence-aware simplification
-
-Implementation of isotropic simplification to enhance edge length uniformity
-
-### Isotropic Simplification
-<table>
-  <tr>
-    <td width="48%">Default (10%)</td>
-    <td width="48%">Isotropic (10%)</td>
-  </tr>
-  <tr>
-    <td width="48%"><img src="docs/unisotropic.png" width="100%"/></td>
-    <td width="48%"><img src="docs/isotropic.png" width="100%"/></td>
-  </tr>
-  <tr>
-    <td width="48%">
-      <ul>
-        <li>Uneven edge length</li>
-        <li>Feature preserved</li>
-      </ul>
-    </td>
-    <td width="48%">
-      <ul>
-        <li>Even edge length</li>
-        <li>Feature smoothed</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+___
 
 ## Limitation
 We consider only a mesh without boundary.
