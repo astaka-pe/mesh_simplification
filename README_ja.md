@@ -13,7 +13,7 @@ scikit-learn==0.24
 
 ## 使用方法
 ```
-python simplification.py --i data/ankylosaurus.obj --v 1000 --optim
+python simplification.py [-h] -i data/ankylosaurus [-v V] [-p P] [-optim] [-isotropic]
 ```
 簡略化後のメッシュは `data/output/` に出力される.
 

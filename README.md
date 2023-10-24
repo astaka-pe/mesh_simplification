@@ -16,7 +16,7 @@ scikit-learn==0.24
 ## Usage
 
 ```
-python simplification.py --i data/ankylosaurus.obj --v 1000 --optim
+python simplification.py [-h] -i data/ankylosaurus [-v V] [-p P] [-optim] [-isotropic]
 ```
 A simplified mesh will be output in `data/output/`.
 
