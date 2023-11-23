@@ -5,15 +5,15 @@
 
 ## ライブラリ
 ```
-pytorch==1.7
-scipy==1.6
-numpy==1.19
-scikit-learn==0.24
+pytorch == 1.9.1
+scipy == 1.5.4
+numpy == 1.19.5
+scikit-learn == 0.23.2
 ```
 
 ## 使用方法
 ```
-python simplification.py [-h] -i data/ankylosaurus [-v V] [-p P] [-optim] [-isotropic]
+python simplification.py [-h] -i data/ankylosaurus.obj [-v V] [-p P] [-optim] [-isotropic]
 ```
 簡略化後のメッシュは `data/output/` に出力される.
 

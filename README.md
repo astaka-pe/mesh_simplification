@@ -7,16 +7,16 @@ The python script for "Surface Simplification Using Quadric Error Metrics, 1997"
 
 ## Environments
 ```
-pytorch==1.7
-scipy==1.6
-numpy==1.19
-scikit-learn==0.24
+pytorch == 1.9.1
+scipy == 1.5.4
+numpy == 1.19.5
+scikit-learn == 0.23.2
 ```
 
 ## Usage
 
 ```
-python simplification.py [-h] -i data/ankylosaurus [-v V] [-p P] [-optim] [-isotropic]
+python simplification.py [-h] -i data/ankylosaurus.obj [-v V] [-p P] [-optim] [-isotropic]
 ```
 A simplified mesh will be output in `data/output/`.
 
