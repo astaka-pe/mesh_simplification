@@ -1,4 +1,4 @@
-[[English]](README.md) [日本語]
+[[English]](README.md) [Japanese]
 
 # メッシュ簡略化
 "Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
