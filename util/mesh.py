@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 import scipy as sp
 import heapq
 import copy
@@ -117,42 +116,32 @@ class Mesh:
     
     def build_uni_lap(self):
         """compute uniform laplacian matrix"""
-        vs = torch.tensor(self.vs.T, dtype=torch.float)
         edges = self.edges
         ve = self.ve
 
         sub_mesh_vv = [edges[v_e, :].reshape(-1) for v_e in ve]
         sub_mesh_vv = [set(vv.tolist()).difference(set([i])) for i, vv in enumerate(sub_mesh_vv)]
 
-        num_verts = vs.size(1)
+        num_verts = self.vs.shape[0]
         mat_rows = [np.array([i] * len(vv), dtype=np.int64) for i, vv in enumerate(sub_mesh_vv)]
         mat_rows = np.concatenate(mat_rows)
         mat_cols = [np.array(list(vv), dtype=np.int64) for vv in sub_mesh_vv]
         mat_cols = np.concatenate(mat_cols)
+        mat_vals = np.ones_like(mat_rows, dtype=np.float32) * -1.0
+        neig_mat = sp.sparse.csr_matrix((mat_vals, (mat_rows, mat_cols)), shape=(num_verts, num_verts))
+        sum_count = sp.sparse.csr_matrix.dot(neig_mat, np.ones((num_verts, 1), dtype=np.float32))
 
-        mat_rows = torch.from_numpy(mat_rows).long()
-        mat_cols = torch.from_numpy(mat_cols).long()
-        mat_vals = torch.ones_like(mat_rows).float() * -1.0
-        neig_mat = torch.sparse.FloatTensor(torch.stack([mat_rows, mat_cols], dim=0),
-                                            mat_vals,
-                                            size=torch.Size([num_verts, num_verts]))
-        vs = vs.T
-
-        sum_count = torch.sparse.mm(neig_mat, torch.ones((num_verts, 1)).type_as(vs))
         mat_rows_ident = np.array([i for i in range(num_verts)])
         mat_cols_ident = np.array([i for i in range(num_verts)])
         mat_ident = np.array([-s for s in sum_count[:, 0]])
-        mat_rows_ident = torch.from_numpy(mat_rows_ident).long()
-        mat_cols_ident = torch.from_numpy(mat_cols_ident).long()
-        mat_ident = torch.from_numpy(mat_ident).long()
-        mat_rows = torch.cat([mat_rows, mat_rows_ident])
-        mat_cols = torch.cat([mat_cols, mat_cols_ident])
-        mat_vals = torch.cat([mat_vals, mat_ident])
 
-        self.lapmat = torch.sparse.FloatTensor(torch.stack([mat_rows, mat_cols], dim=0),
-                                            mat_vals,
-                                            size=torch.Size([num_verts, num_verts]))
-    
+
+        mat_rows = np.concatenate([mat_rows, mat_rows_ident], axis=0)
+        mat_cols = np.concatenate([mat_cols, mat_cols_ident], axis=0)
+        mat_vals = np.concatenate([mat_vals, mat_ident], axis=0)
+
+        self.lapmat = sp.sparse.csr_matrix((mat_vals, (mat_rows, mat_cols)), shape=(num_verts, num_verts))
+
     def build_vf(self):
         vf = [set() for _ in range(len(self.vs))]
         for i, f in enumerate(self.faces):
@@ -171,10 +160,10 @@ class Mesh:
         """ compute adjacent matrix """
         edges = self.edges
         v2v_inds = edges.T
-        v2v_inds = torch.from_numpy(np.concatenate([v2v_inds, v2v_inds[[1, 0]]], axis=1)).long()
-        v2v_vals = torch.ones(v2v_inds.shape[1]).float()
-        self.v2v_mat = torch.sparse.FloatTensor(v2v_inds, v2v_vals, size=torch.Size([len(self.vs), len(self.vs)]))
-        self.v_dims = torch.sum(self.v2v_mat.to_dense(), axis=1)
+        v2v_inds = np.concatenate([v2v_inds, v2v_inds[[1, 0]]], axis=1).astype(np.int64)
+        v2v_vals = np.ones(v2v_inds.shape[1], dtype=np.float32)
+        self.v2v_mat = sp.sparse.csr_matrix((v2v_vals, v2v_inds), shape=(len(self.vs), len(self.vs)))
+        self.v_dims = np.sum(self.v2v_mat.toarray(), axis=1)
 
     def simplification(self, target_v, valence_aware=True, midpoint=False):
         vs, vf, fn, fc, edges = self.vs, self.vf, self.fn, self.fc, self.edges
@@ -225,8 +214,8 @@ class Mesh:
         """ 3. collapse minimum-error vertex """
         simp_mesh = copy.deepcopy(self)
 
-        vi_mask = np.ones([len(simp_mesh.vs)]).astype(np.bool)
-        fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool)
+        vi_mask = np.ones([len(simp_mesh.vs)]).astype(np.bool_)
+        fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool_)
 
         vert_map = [{i} for i in range(len(simp_mesh.vs))]
 
