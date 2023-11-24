@@ -7,9 +7,9 @@ The python script for "Surface Simplification Using Quadric Error Metrics, 1997"
 
 ## Environments
 ```
-scipy == 1.5.4
-numpy == 1.19.5
-scikit-learn == 0.23.2
+scipy == 1.11.3
+numpy == 1.26.0
+scikit-learn == 1.3.0
 ```
 
 ## Usage

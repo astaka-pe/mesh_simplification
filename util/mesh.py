@@ -270,8 +270,8 @@ class Mesh:
         """ 3. collapse minimum-error vertex """
         simp_mesh = copy.deepcopy(self)
 
-        vi_mask = np.ones([len(simp_mesh.vs)]).astype(np.bool)
-        fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool)
+        vi_mask = np.ones([len(simp_mesh.vs)]).astype(np.bool_)
+        fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool_)
 
         vert_map = [{i} for i in range(len(simp_mesh.vs))]
 
@@ -333,7 +333,7 @@ class Mesh:
         vert_map[vi_0] = vert_map[vi_0].union({vi_1})
         vert_map[vi_1] = set()
         
-        fi_mask[np.array(list(merged_faces)).astype(np.int)] = False
+        fi_mask[np.array(list(merged_faces)).astype(np.int32)] = False
 
         simp_mesh.vs[vi_0] = 0.5 * (simp_mesh.vs[vi_0] + simp_mesh.vs[vi_1])
 
@@ -373,7 +373,7 @@ class Mesh:
         vert_map[vi_0] = vert_map[vi_0].union({vi_1})
         vert_map[vi_1] = set()
         
-        fi_mask[np.array(list(merged_faces)).astype(np.int)] = False
+        fi_mask[np.array(list(merged_faces)).astype(np.int32)] = False
 
         simp_mesh.vs[vi_0] = 0.5 * (simp_mesh.vs[vi_0] + simp_mesh.vs[vi_1])
 

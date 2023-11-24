@@ -5,9 +5,9 @@
 
 ## ライブラリ
 ```
-scipy == 1.5.4
-numpy == 1.19.5
-scikit-learn == 0.23.2
+scipy == 1.11.3
+numpy == 1.26.0
+scikit-learn == 1.3.0
 ```
 
 ## 使用方法
@@ -21,7 +21,7 @@ python simplification.py [-h] -i data/ankylosaurus.obj [-v V] [-p P] [-optim] [-
 - `-v`: ターゲット超点数 [オプション]
 - `-p`: 簡略化比率 [オプション (-vを指定した場合には無効) | デフォルト: 0.5]
 - `-optim`: 価数最適化 [オプション | 推奨]
-- `-isotropic`: 等方的簡略化 [Optional]
+- `-isotropic`: 等方的簡略化 [オプション]
 
 ___
 
