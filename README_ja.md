@@ -3,8 +3,11 @@
 # メッシュ簡略化
 "Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
 
+<div style="text-align: center"><img src="docs/demo.gif" width="70%"></div>
+
 ## ライブラリ
 ```
+python == 3.12.0
 scipy == 1.11.3
 numpy == 1.26.0
 scikit-learn == 1.3.0

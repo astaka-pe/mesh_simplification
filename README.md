@@ -4,9 +4,11 @@
 
 The python script for "Surface Simplification Using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
 
+<div style="text-align: center"><img src="docs/demo.gif" width="70%"></div>
 
 ## Environments
 ```
+python == 3.12.0
 scipy == 1.11.3
 numpy == 1.26.0
 scikit-learn == 1.3.0
