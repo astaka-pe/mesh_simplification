@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import heapq
 import copy
+from tqdm import tqdm
 from sklearn.preprocessing import normalize
 
 OPTIM_VALENCE = 6
@@ -218,7 +219,7 @@ class Mesh:
         fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool_)
 
         vert_map = [{i} for i in range(len(simp_mesh.vs))]
-
+        pbar = tqdm(total=np.sum(vi_mask)-target_v, desc="Processing")
         while np.sum(vi_mask) > target_v:
             if len(E_heap) == 0:
                 print("[Warning]: edge cannot be collapsed anymore!")
@@ -246,6 +247,7 @@ class Mesh:
 
             else:
                 self.edge_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, Q_s, E_heap, valence_aware=valence_aware)
+                pbar.update(1)
                 # print(np.sum(vi_mask), np.sum(fi_mask))
         
         self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
@@ -274,7 +276,7 @@ class Mesh:
         fi_mask = np.ones([len(simp_mesh.faces)]).astype(np.bool_)
 
         vert_map = [{i} for i in range(len(simp_mesh.vs))]
-
+        pbar = tqdm(total=np.sum(vi_mask)-target_v, desc="Processing")
         while np.sum(vi_mask) > target_v:
             if len(E_heap) == 0:
                 print("[Warning]: edge cannot be collapsed anymore!")
@@ -301,6 +303,7 @@ class Mesh:
 
             else:
                 self.edge_based_collapse(simp_mesh, vi_0, vi_1, merged_faces, vi_mask, fi_mask, vert_map, E_heap, valence_aware=valence_aware)
+                pbar.update(1)
                 # print(np.sum(vi_mask), np.sum(fi_mask))
         
         self.rebuild_mesh(simp_mesh, vi_mask, fi_mask, vert_map)
