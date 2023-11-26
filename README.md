@@ -4,7 +4,7 @@
 
 The python script for "Surface Simplification Using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf)
 
-<!-- <div style="text-align: center"><img src="docs/demo.gif" width="70%"></div> -->
+<div style="text-align: center"><img src="docs/demo.gif" width="70%"></div>
 
 ## Environments
 ```

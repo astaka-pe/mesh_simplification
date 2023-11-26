@@ -3,7 +3,7 @@
 # メッシュ簡略化
 "Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
 
-<!-- <div style="text-align: center"><img src="docs/demo.gif" width="70%"></div> -->
+<div style="text-align: center"><img src="docs/demo.gif" width="70%"></div>
 
 ## ライブラリ
 ```
