@@ -1,16 +1,30 @@
-[[English]](README.md) [Japanese]
+言語: [🇺🇸](README.md) 🇯🇵
 
 # メッシュ簡略化
 "Surface Simplification using Quadric Error Metrics, 1997" [[Paper]](http://www.cs.cmu.edu/~garland/Papers/quadrics.pdf) を実装。
 
 <div style="text-align: center"><img src="docs/demo.gif" width="70%"></div>
 
-## ライブラリ
+## 動作環境
 ```
-python == 3.12.0
-scipy == 1.11.3
-numpy == 1.26.0
-scikit-learn == 1.3.0
+python==3.12.0
+scipy==1.11.3
+numpy==1.26.0
+scikit-learn==1.3.0
+tqdm
+```
+
+## インストール
+
+```
+# Clone
+git clone https://github.com/astaka-pe/mesh_simplification.git
+cd mesh_simplification
+
+# Docker
+docker image build -t astaka-pe/mesh-simp .
+docker run -itd --gpus all --name mesh-simp -v .:/work astaka-pe/mesh-simp
+docker exec -it mesh-simp /bin/bash
 ```
 
 ## 使用方法

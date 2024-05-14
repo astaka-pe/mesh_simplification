@@ -1,4 +1,4 @@
-[English] [[Japanese]](README_ja.md)
+Language: 🇺🇸 [🇯🇵](README_ja.md)
 
 # Mesh Simplification
 
