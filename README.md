@@ -8,10 +8,24 @@ The python script for "Surface Simplification Using Quadric Error Metrics, 1997"
 
 ## Environments
 ```
-python == 3.12.0
-scipy == 1.11.3
-numpy == 1.26.0
-scikit-learn == 1.3.0
+python==3.12.0
+scipy==1.11.3
+numpy==1.26.0
+scikit-learn==1.3.0
+tqdm
+```
+
+## Installation
+
+```
+# Clone
+git clone https://github.com/astaka-pe/mesh_simplification.git
+cd mesh_simplification
+
+# Docker
+docker image build -t astaka-pe/mesh-simp .
+docker run -itd --gpus all --name mesh-simp -v .:/work astaka-pe/mesh-simp
+docker exec -it mesh-simp /bin/bash
 ```
 
 ## Usage
